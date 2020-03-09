@@ -2,6 +2,7 @@ const db = require('../data/knex-config');
 
 module.exports = {
 	//Project CRUD
+	getProjectWithTasksResource,
 	getProjects,
 	getProjectsById,
 	addProject,
@@ -9,12 +10,14 @@ module.exports = {
 	removeProject,
 
 	//Resources CRUD
+	getAllResources,
 	getResources,
 	addResource,
 	updateResource,
 	removeResource,
 
 	//Tasks Crud
+	getAllTasks,
 	getTasks,
 	addTask,
 	updateTask,
@@ -22,6 +25,41 @@ module.exports = {
 };
 
 //Project CRUD MODEL
+async function getProjectWithTasksResource(id) {
+	const project = await db('projects as p').select('p.*').where('p.id', id).first();
+	const resource = await db('resources as r')
+		.select('r.id', 'r.resource_name', 'r.resource_description')
+		.where('r.project_id', id);
+	const task = await db('tasks as t')
+		.select('t.id', 't.task_description', 't.task_notes', 't.task_completed')
+		.where('t.project_id', id);
+	const ProjectResource = resource.map((item) => {
+		return {
+			id: item.id,
+			name: item.resource_name,
+			description: item.resource_description
+		};
+	});
+
+	const ProjectTask = task.map((item) => {
+		return {
+			id: item.id,
+			name: item.task_description,
+			notes: item.task_notes,
+			completed: item.task_completed
+		};
+	});
+
+	return {
+		id: project.id,
+		name: project.project_name,
+		description: project.project_description,
+		completed: project.project_completed,
+		ProjectTask,
+		ProjectResource
+	};
+}
+
 function getProjects() {
 	return db('projects').select('*');
 }
@@ -37,7 +75,7 @@ function addProject(project) {
 }
 
 function updateProject(changes, id) {
-	return db('projects').update(changes).where(id);
+	return db('projects').update(changes).where('projects.id', id);
 }
 
 function removeProject(id) {
@@ -45,8 +83,15 @@ function removeProject(id) {
 }
 
 //Resource CRUD MODEL
-function getResources() {
+function getAllResources() {
 	return db('resources').select('*');
+}
+
+function getResources(id) {
+	return db('projects')
+		.join('resources', 'resources.project_id', 'projects.id')
+		.select('*')
+		.where({ 'resources.project_id': id });
 }
 
 function addResource(resource) {
@@ -54,7 +99,7 @@ function addResource(resource) {
 }
 
 function updateResource(changes, id) {
-	return db('resources').update(changes).where(id);
+	return db('resources').update(changes).where('resources.id', id);
 }
 
 function removeResource(id) {
@@ -62,6 +107,10 @@ function removeResource(id) {
 }
 
 //TASKS CRUD MODEL
+function getAllTasks() {
+	return db('tasks').select('*');
+}
+
 function getTasks(id) {
 	return db('projects')
 		.join('tasks', 'tasks.project_id', 'projects.id')
@@ -74,7 +123,7 @@ function addTask(task) {
 }
 
 function updateTask(changes, id) {
-	return db('tasks').update(changes).where(id);
+	return db('tasks').update(changes).where('tasks.id', id);
 }
 
 function removeTask(id) {

@@ -9,11 +9,17 @@ exports.up = function(knex) {
 				table.boolean('project_completed').default('false');
 			})
 			//Resources Table
-
 			.createTable('resources', (table) => {
 				table.increments();
 				table.string('resource_name').notNullable().unique();
 				table.text('resource_description');
+				table
+					.integer('project_id')
+					.references('id')
+					.inTable('projects')
+					.onDelete('CASCADE')
+					.onUpdate('CASCADE')
+					.notNullable();
 			})
 			//Tasks Table
 			.createTable('tasks', (table) => {
@@ -30,7 +36,6 @@ exports.up = function(knex) {
 					.notNullable();
 			})
 			//join table for projects and resources
-
 			.createTable('project-resources', (table) => {
 				table
 					.integer('project_id')

@@ -1,12 +1,12 @@
 const express = require('express');
+const dataBase = require('../data/knex-config');
 const db = require('../projects/project-model');
 const router = express.Router();
 
 router.get('/', (req, res, next) => {
 	try {
 		res.status(200).json({
-			message:
-				'welcome to the API. What would you like PROJECTS? RESOURCES? TASKS?. Post new data, Update data, or delete data using these endpoints: /api/projects /api/resources or /api/projects/:id/tasks'
+			message: `welcome to the API. What would you like PROJECTS? RESOURCES? TASKS? /api/projects /api/resources /api/projects/:id/tasks /api/projects/:id/resources`
 		});
 	} catch (err) {
 		next(err);
@@ -22,14 +22,24 @@ router.get('/projects', async (req, res, next) => {
 	}
 });
 
+//SPECIAL STRETCH PROJECT ROUTE
 router.get('/projects/:id', async (req, res, next) => {
 	try {
-		const data = await db.getProjectsById(req.params.id);
+		const data = await db.getProjectWithTasksResource(req.params.id);
 		res.status(200).json(data);
 	} catch (err) {
 		next(err);
 	}
 });
+
+// router.get('/projects/:id', validateProjectId, async (req, res, next) => {
+// 	try {
+// 		const data = await db.getProjectsById(req.params.id);
+// 		res.status(200).json(data);
+// 	} catch (err) {
+// 		next(err);
+// 	}
+// });
 
 router.post('/projects', async (req, res, next) => {
 	const newProject = req.body;
@@ -41,21 +51,16 @@ router.post('/projects', async (req, res, next) => {
 	}
 });
 
-router.put('/projects/:id', async (req, res, next) => {
+router.put('/projects/:id', validateProjectId, async (req, res, next) => {
 	try {
-		const updatedProject = {
-			id: req.params.id,
-			name: req.body,
-			description: req.body
-		};
-		await db.updateProject(updatedProject);
+		const updatedProject = await db.updateProject(req.body, req.params.id);
 		res.status(201).json(updatedProject);
 	} catch (err) {
 		next(err);
 	}
 });
 
-router.delete('/projects/:id', async (req, res, next) => {
+router.delete('/projects/:id', validateProjectId, async (req, res, next) => {
 	try {
 		await db.removeProject(req.params.id);
 		res.status(200).json({ message: 'Project Removed' });
@@ -67,9 +72,17 @@ router.delete('/projects/:id', async (req, res, next) => {
 //RESOURCES CRUD OPERATION
 router.get('/resources', async (req, res, next) => {
 	try {
-		const data = await db.getResources();
+		const data = await db.getAllResources();
 		res.status(200).json(data);
-		console.log('TEST');
+	} catch (err) {
+		next(err);
+	}
+});
+
+router.get('/projects/:id/resources', validateProjectId, async (req, res, next) => {
+	try {
+		const data = await db.getResources(req.params.id);
+		res.status(200).json(data);
 	} catch (err) {
 		next(err);
 	}
@@ -85,21 +98,16 @@ router.post('/resources', async (req, res, next) => {
 	}
 });
 
-router.put('/resources/:resource_id', async (req, res, next) => {
+router.put('/resources/:id', validateResourceId, async (req, res, next) => {
 	try {
-		const updatedResource = {
-			id: req.params.resource_id,
-			name: req.body,
-			description: req.body
-		};
-		await db.updateProject(updatedResource);
+		const updatedResource = await db.updateResource(req.body, req.params.id);
 		res.status(201).json(updatedResource);
 	} catch (err) {
 		next(err);
 	}
 });
 
-router.delete('/resources/:id', async (req, res, next) => {
+router.delete('/resources/:id', validateResourceId, async (req, res, next) => {
 	try {
 		await db.removeResource(req.params.id);
 		res.status(200).json({ message: 'Resource Removed' });
@@ -109,8 +117,16 @@ router.delete('/resources/:id', async (req, res, next) => {
 });
 
 //TASKS CRUD OPERATIONS
+router.get('/tasks', async (req, res, next) => {
+	try {
+		const data = await db.getAllTasks();
+		res.status(200).json(data);
+	} catch (err) {
+		next(err);
+	}
+});
 
-router.get('/projects/:id/tasks', async (req, res, next) => {
+router.get('/projects/:id/tasks', validateProjectId, async (req, res, next) => {
 	try {
 		const data = await db.getTasks(req.params.id);
 		res.status(200).json(data);
@@ -119,7 +135,7 @@ router.get('/projects/:id/tasks', async (req, res, next) => {
 	}
 });
 
-router.post('/projects/:id/tasks', async (req, res, next) => {
+router.post('/projects/:id/tasks', validateProjectId, async (req, res, next) => {
 	try {
 		const newTask = req.body;
 		await db.addTask(newTask);
@@ -129,30 +145,56 @@ router.post('/projects/:id/tasks', async (req, res, next) => {
 	}
 });
 
-router.put('/projects/:id/tasks/:task_id', async (req, res, next) => {
+router.put('/tasks/:id', validateTaskId, async (req, res, next) => {
 	try {
-		const updatedResource = {
-			id: req.params.task_id,
-			task_description: req.body.task_description,
-			task_notes: req.body.task_notes,
-			task_completed: req.body.task_completed,
-			project_id: req.params.id
-		};
-		await db.updateProject(updatedResource);
-		res.status(201).json(updatedResource);
+		const updatedTask = await db.updateTask(req.body, req.params.id);
+		res.status(201).json(updatedTask);
 	} catch (err) {
 		next(err);
 	}
 });
 
-router.delete('/projects/:id/tasks/:task_id', async (req, res, next) => {
+router.delete('tasks/:id', validateTaskId, async (req, res, next) => {
 	try {
-		const id = req.params.task_id;
-		await db.removeTask(id);
+		await db.removeTask(req.params.id);
 		res.status(200).json({ message: 'Task Removed' });
 	} catch (err) {
 		next(err);
 	}
 });
+
+//MIDDLE WARE FOR VALIDATION OF ID
+//Validate Project & ID
+async function validateProjectId(req, res, next) {
+	const project = await dataBase('projects').where('id', parseInt(req.params.id));
+	if (!project[0]) {
+		res.status(404).json({ message: 'Invalid project Id' });
+	}
+	else {
+		next();
+	}
+}
+
+//Validate Resource ID
+async function validateResourceId(req, res, next) {
+	const resource = await dataBase('resources').where('id', parseInt(req.params.id));
+	if (!resource[0]) {
+		res.status(404).json({ message: 'Invalid resource Id' });
+	}
+	else {
+		next();
+	}
+}
+
+//Validate Tasks ID
+async function validateTaskId(req, res, next) {
+	const task = await dataBase('tasks').where('id', parseInt(req.params.id));
+	if (!task[0]) {
+		res.status(404).json({ message: 'Invalid resource Id' });
+	}
+	else {
+		next();
+	}
+}
 
 module.exports = router;
