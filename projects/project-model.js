@@ -23,7 +23,7 @@ module.exports = {
 
 //Project CRUD MODEL
 function getProjects() {
-	return db('projects');
+	return db('projects').select('*');
 }
 
 function getProjectsById(id) {
@@ -46,7 +46,7 @@ function removeProject(id) {
 
 //Resource CRUD MODEL
 function getResources() {
-	return db('resources');
+	return db('resources').select('*');
 }
 
 function addResource(resource) {

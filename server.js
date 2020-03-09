@@ -11,7 +11,7 @@ server.use(morgan('dev'));
 server.use(express.json());
 
 server.use('/', welcomeRouter);
-server.use('/api/projects', projectRouter);
+server.use('/api', projectRouter);
 
 server.use((err, req, res, next) => {
 	console.log(err);
