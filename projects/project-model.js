@@ -26,61 +26,66 @@ module.exports = {
 	removeTask
 };
 
-//Project CRUD MODEL
-// async function getProjectWithTasksResource(id) {
-// 	const project = await db('projects as p')
-// 		.select(
-// 			'p.id',
-// 			'p.project_name as name',
-// 			'p.project_description as description',
-// 			'p.project_completed as completed'
-// 		)
-// 		.where('p.id', id)
-// 		.first();
-// 	const tasks = await db('tasks as t')
-// 		.select('t.id', 't.task_description as description', 't.task_notes as notes', 't.task_completed as completed')
-// 		.where('t.project_id', id)
-// 		.first();
-// 	return {
-// 		project: {
-// 			project,
-// 			tasks
-// 		}
-// 	};
-// }
-
+// Project CRUD MODEL
 async function getProjectWithTasksResource(id) {
-	const project = await db('projects as p').select('p.*').where('p.id', id).first();
-	const resource = await db('resources as r')
-		.select('r.id', 'r.resource_name', 'r.resource_description')
-		.where('r.project_id', id);
-	const task = await db('tasks as t')
-		.select('t.id', 't.task_description', 't.task_notes', 't.task_completed')
-		.where('t.project_id', id);
-	const resources = resource.map((item) => {
-		return {
-			id: item.id,
-			name: item.resource_name,
-			description: item.resource_description
-		};
-	});
-	const tasks = task.map((item) => {
-		return {
-			id: item.id,
-			name: item.task_description,
-			notes: item.task_notes,
-			completed: item.task_completed
-		};
-	});
+	const project = await db('projects as p')
+		.select(
+			'p.id',
+			'p.project_name as name',
+			'p.project_description as description',
+			Boolean('p.project_completed as completed')
+		)
+		.where('p.id', id)
+		.first();
+	const tasks = await db('tasks as t')
+		.select(
+			't.id',
+			't.task_description as description',
+			't.task_notes as notes',
+			Boolean('t.task_completed as completed')
+		)
+		.where('t.project_id', id)
+		.first();
 	return {
-		id: project.id,
-		name: project.project_name,
-		description: project.project_description,
-		completed: project.project_completed,
-		tasks,
-		resources
+		project: {
+			project,
+			tasks
+		}
 	};
 }
+
+// async function getProjectWithTasksResource(id) {
+// 	const project = await db('projects as p').select('p.*').where('p.id', id).first();
+// 	const resource = await db('resources as r')
+// 		.select('r.id', 'r.resource_name', 'r.resource_description')
+// 		.where('r.project_id', id);
+// 	const task = await db('tasks as t')
+// 		.select('t.id', 't.task_description', 't.task_notes', 't.task_completed')
+// 		.where('t.project_id', id);
+// 	const resources = resource.map((item) => {
+// 		return {
+// 			id: item.id,
+// 			name: item.resource_name,
+// 			description: Boolean(item.resource_description)
+// 		};
+// 	});
+// 	const tasks = task.map((item) => {
+// 		return {
+// 			id: item.id,
+// 			name: item.task_description,
+// 			notes: item.task_notes,
+// 			completed: Boolean(item.task_completed)
+// 		};
+// 	});
+// 	return {
+// 		id: project.id,
+// 		name: project.project_name,
+// 		description: project.project_description,
+// 		completed: Boolean(project.project_completed),
+// 		tasks,
+// 		resources
+// 	};
+// }
 
 async function getProjects() {
 	const projects = await db('projects as p').select(
