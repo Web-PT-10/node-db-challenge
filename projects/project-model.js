@@ -11,8 +11,10 @@ module.exports = {
 
 	//Resources CRUD
 	getAllResources,
+	getLastResources,
 	getResources,
 	addResource,
+	addResourceJoinTable,
 	updateResource,
 	removeResource,
 
@@ -25,6 +27,28 @@ module.exports = {
 };
 
 //Project CRUD MODEL
+// async function getProjectWithTasksResource(id) {
+// 	const project = await db('projects as p')
+// 		.select(
+// 			'p.id',
+// 			'p.project_name as name',
+// 			'p.project_description as description',
+// 			'p.project_completed as completed'
+// 		)
+// 		.where('p.id', id)
+// 		.first();
+// 	const tasks = await db('tasks as t')
+// 		.select('t.id', 't.task_description as description', 't.task_notes as notes', 't.task_completed as completed')
+// 		.where('t.project_id', id)
+// 		.first();
+// 	return {
+// 		project: {
+// 			project,
+// 			tasks
+// 		}
+// 	};
+// }
+
 async function getProjectWithTasksResource(id) {
 	const project = await db('projects as p').select('p.*').where('p.id', id).first();
 	const resource = await db('resources as r')
@@ -33,15 +57,14 @@ async function getProjectWithTasksResource(id) {
 	const task = await db('tasks as t')
 		.select('t.id', 't.task_description', 't.task_notes', 't.task_completed')
 		.where('t.project_id', id);
-	const ProjectResource = resource.map((item) => {
+	const resources = resource.map((item) => {
 		return {
 			id: item.id,
 			name: item.resource_name,
 			description: item.resource_description
 		};
 	});
-
-	const ProjectTask = task.map((item) => {
+	const tasks = task.map((item) => {
 		return {
 			id: item.id,
 			name: item.task_description,
@@ -49,19 +72,25 @@ async function getProjectWithTasksResource(id) {
 			completed: item.task_completed
 		};
 	});
-
 	return {
 		id: project.id,
 		name: project.project_name,
 		description: project.project_description,
 		completed: project.project_completed,
-		ProjectTask,
-		ProjectResource
+		tasks,
+		resources
 	};
 }
 
-function getProjects() {
-	return db('projects').select('*');
+async function getProjects() {
+	const projects = await db('projects as p').select(
+		'p.id',
+		'p.project_name as name',
+		'p.project_description as description',
+		'p.project_completed as completed'
+	);
+
+	return projects;
 }
 
 function getProjectsById(id) {
@@ -88,14 +117,22 @@ function getAllResources() {
 }
 
 function getResources(id) {
-	return db('projects')
-		.join('resources', 'resources.project_id', 'projects.id')
-		.select('*')
-		.where({ 'resources.project_id': id });
+	return db('resources as r')
+		.select('r.id', 'r.resource_name as name', 'r.resource_description as description')
+		.where('r.project_id', id)
+		.first();
+}
+
+function getLastResources(id) {
+	return db('resources as r').where('r.project_id', id).select('r.id').max('r.id as id').first();
 }
 
 function addResource(resource) {
 	return db('resources').insert(resource);
+}
+
+function addResourceJoinTable(resource) {
+	return db('project-resources').insert(resource);
 }
 
 function updateResource(changes, id) {

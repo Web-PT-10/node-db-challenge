@@ -32,15 +32,6 @@ router.get('/projects/:id', async (req, res, next) => {
 	}
 });
 
-// router.get('/projects/:id', validateProjectId, async (req, res, next) => {
-// 	try {
-// 		const data = await db.getProjectsById(req.params.id);
-// 		res.status(200).json(data);
-// 	} catch (err) {
-// 		next(err);
-// 	}
-// });
-
 router.post('/projects', async (req, res, next) => {
 	const newProject = req.body;
 	try {
@@ -79,7 +70,7 @@ router.get('/resources', async (req, res, next) => {
 	}
 });
 
-router.get('/projects/:id/resources', validateProjectId, async (req, res, next) => {
+router.get('/projects/:id/resources', async (req, res, next) => {
 	try {
 		const data = await db.getResources(req.params.id);
 		res.status(200).json(data);
@@ -88,17 +79,35 @@ router.get('/projects/:id/resources', validateProjectId, async (req, res, next) 
 	}
 });
 
-router.post('/resources', async (req, res, next) => {
+router.get('/projects/:id/resource', async (req, res, next) => {
 	try {
-		const newResource = req.body;
-		await db.addResource(newResource);
-		res.status(201).json(newResource);
+		const data = await db.getLastResources(req.params.id);
+		res.status(200).json(data);
 	} catch (err) {
 		next(err);
 	}
 });
 
-router.put('/resources/:id', validateResourceId, async (req, res, next) => {
+router.post('/projects/:id/resources', validateProjectId, async (req, res, next) => {
+	const { id } = req.params;
+	const newResource = { ...req.body, project_id: id };
+	try {
+		await db.addResource(newResource);
+		try {
+			const { id } = req.params;
+			const resourceId = await db.getLastResources(id);
+			const newRP = { project_id: id, resource_id: String(Object.values(resourceId)) };
+			await db.addResourceJoinTable(newRP);
+			res.status(201).json(newResource);
+		} catch (err) {
+			next(err);
+		}
+	} catch (err) {
+		next(err);
+	}
+});
+
+router.put('/projects/:id/resources/:id', async (req, res, next) => {
 	try {
 		const updatedResource = await db.updateResource(req.body, req.params.id);
 		res.status(201).json(updatedResource);
@@ -107,7 +116,7 @@ router.put('/resources/:id', validateResourceId, async (req, res, next) => {
 	}
 });
 
-router.delete('/resources/:id', validateResourceId, async (req, res, next) => {
+router.delete('/projects/:id/resources/:id', validateResourceId, async (req, res, next) => {
 	try {
 		await db.removeResource(req.params.id);
 		res.status(200).json({ message: 'Resource Removed' });
@@ -136,8 +145,9 @@ router.get('/projects/:id/tasks', validateProjectId, async (req, res, next) => {
 });
 
 router.post('/projects/:id/tasks', validateProjectId, async (req, res, next) => {
+	const { id } = req.params;
+	const newTask = { ...req.body, project_id: id };
 	try {
-		const newTask = req.body;
 		await db.addTask(newTask);
 		res.status(201).json(newTask);
 	} catch (err) {
