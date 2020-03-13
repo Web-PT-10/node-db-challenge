@@ -70,44 +70,17 @@ router.get('/resources', async (req, res, next) => {
 	}
 });
 
-router.get('/projects/:id/resources', async (req, res, next) => {
-	try {
-		const data = await db.getResources(req.params.id);
-		res.status(200).json(data);
-	} catch (err) {
-		next(err);
-	}
-});
-
-router.get('/projects/:id/resource', async (req, res, next) => {
-	try {
-		const data = await db.getLastResources(req.params.id);
-		res.status(200).json(data);
-	} catch (err) {
-		next(err);
-	}
-});
-
-router.post('/projects/:id/resources', validateProjectId, async (req, res, next) => {
-	const { id } = req.params;
-	const newResource = { ...req.body, project_id: id };
+router.post('projects/:id/resources', async (req, res, next) => {
+	const newResource = req.body;
 	try {
 		await db.addResource(newResource);
-		try {
-			const { id } = req.params;
-			const resourceId = await db.getLastResources(id);
-			const newRP = { project_id: id, resource_id: String(Object.values(resourceId)) };
-			await db.addResourceJoinTable(newRP);
-			res.status(201).json(newResource);
-		} catch (err) {
-			next(err);
-		}
+		res.status(201).json(newResource);
 	} catch (err) {
 		next(err);
 	}
 });
 
-router.put('/projects/:id/resources/:id', async (req, res, next) => {
+router.put('/projects/:id/resources', async (req, res, next) => {
 	try {
 		const updatedResource = await db.updateResource(req.body, req.params.id);
 		res.status(201).json(updatedResource);
@@ -128,7 +101,7 @@ router.delete('/projects/:id/resources/:id', validateResourceId, async (req, res
 //TASKS CRUD OPERATIONS
 router.get('/tasks', async (req, res, next) => {
 	try {
-		const data = await db.getAllTasks();
+		const data = await db.getTasks();
 		res.status(200).json(data);
 	} catch (err) {
 		next(err);

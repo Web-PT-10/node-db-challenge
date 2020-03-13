@@ -11,10 +11,8 @@ module.exports = {
 
 	//Resources CRUD
 	getAllResources,
-	getLastResources,
 	getResources,
 	addResource,
-	addResourceJoinTable,
 	updateResource,
 	removeResource,
 
@@ -33,59 +31,19 @@ async function getProjectWithTasksResource(id) {
 			'p.id',
 			'p.project_name as name',
 			'p.project_description as description',
-			Boolean('p.project_completed as completed')
+			'p.project_completed as completed'
 		)
 		.where('p.id', id)
 		.first();
 	const tasks = await db('tasks as t')
-		.select(
-			't.id',
-			't.task_description as description',
-			't.task_notes as notes',
-			Boolean('t.task_completed as completed')
-		)
+		.select('t.id', 't.task_description as description', 't.task_notes as notes', 't.task_completed as completed')
 		.where('t.project_id', id)
 		.first();
 	return {
-		project: {
-			project,
-			tasks
-		}
+		project,
+		tasks
 	};
 }
-
-// async function getProjectWithTasksResource(id) {
-// 	const project = await db('projects as p').select('p.*').where('p.id', id).first();
-// 	const resource = await db('resources as r')
-// 		.select('r.id', 'r.resource_name', 'r.resource_description')
-// 		.where('r.project_id', id);
-// 	const task = await db('tasks as t')
-// 		.select('t.id', 't.task_description', 't.task_notes', 't.task_completed')
-// 		.where('t.project_id', id);
-// 	const resources = resource.map((item) => {
-// 		return {
-// 			id: item.id,
-// 			name: item.resource_name,
-// 			description: Boolean(item.resource_description)
-// 		};
-// 	});
-// 	const tasks = task.map((item) => {
-// 		return {
-// 			id: item.id,
-// 			name: item.task_description,
-// 			notes: item.task_notes,
-// 			completed: Boolean(item.task_completed)
-// 		};
-// 	});
-// 	return {
-// 		id: project.id,
-// 		name: project.project_name,
-// 		description: project.project_description,
-// 		completed: Boolean(project.project_completed),
-// 		tasks,
-// 		resources
-// 	};
-// }
 
 async function getProjects() {
 	const projects = await db('projects as p').select(
@@ -124,20 +82,18 @@ function getAllResources() {
 function getResources(id) {
 	return db('resources as r')
 		.select('r.id', 'r.resource_name as name', 'r.resource_description as description')
-		.where('r.project_id', id)
-		.first();
+		.where('r.project_id', id);
 }
 
-function getLastResources(id) {
-	return db('resources as r').where('r.project_id', id).select('r.id').max('r.id as id').first();
-}
+async function addResource({ resource_name, resource_description, project_id }) {
+	const [ project ] = await db('projects as p').where({ 'p.id': project_id });
+	if (!project) {
+		throw new Error('No Project THERE');
+	}
+	const [ resource_id ] = await db('resources').insert({ resource_name, resource_description });
 
-function addResource(resource) {
-	return db('resources').insert(resource);
-}
-
-function addResourceJoinTable(resource) {
-	return db('project-resources').insert(resource);
+	await db('project-resources').insert({ project_id: project.id, resource_id });
+	return db('resources as r').where('r.id', resource_id);
 }
 
 function updateResource(changes, id) {
@@ -153,11 +109,17 @@ function getAllTasks() {
 	return db('tasks').select('*');
 }
 
-function getTasks(id) {
-	return db('projects')
-		.join('tasks', 'tasks.project_id', 'projects.id')
-		.select('*')
-		.where({ 'tasks.project_id': id });
+async function getTasks(projectId) {
+	const tasks = await db('projects as p')
+		.where({ 'p.id': projectId })
+		.join('tasks as t', 't.project_id', 'p.id')
+		.select(
+			'p.project_name as name',
+			'p.project_description as description',
+			't.task_description as description',
+			't.task_notes as notes'
+		);
+	return tasks.map((task) => ({ ...task, task_completed: Boolean(task.task_completed) }));
 }
 
 function addTask(task) {

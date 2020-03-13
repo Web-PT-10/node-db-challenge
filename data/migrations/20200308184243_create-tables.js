@@ -13,13 +13,6 @@ exports.up = function(knex) {
 				table.increments();
 				table.string('resource_name').notNullable().unique();
 				table.text('resource_description');
-				table
-					.integer('project_id')
-					.references('id')
-					.inTable('projects')
-					.onDelete('CASCADE')
-					.onUpdate('CASCADE')
-					.notNullable();
 			})
 			//Tasks Table
 			.createTable('tasks', (table) => {
